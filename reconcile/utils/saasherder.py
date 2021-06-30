@@ -342,17 +342,20 @@ class SaasHerder():
         github = options['github']
         hash_length = options.get('hash_length')
         commit_sha = ''
-        if 'github' in url:
-            repo_name = url.rstrip("/").replace('https://github.com/', '')
-            repo = github.get_repo(repo_name)
-            commit = repo.get_commit(sha=ref)
-            commit_sha = commit.sha
-        elif 'gitlab' in url:
-            if not self.gitlab:
-                raise Exception('gitlab is not initialized')
-            project = self.gitlab.get_project(url)
-            commits = project.commits.list(ref_name=ref)
-            commit_sha = commits[0].id
+        try:
+            if 'github' in url:
+                repo_name = url.rstrip("/").replace('https://github.com/', '')
+                repo = github.get_repo(repo_name)
+                commit = repo.get_commit(sha=ref)
+                commit_sha = commit.sha
+            elif 'gitlab' in url:
+                if not self.gitlab:
+                    raise Exception('gitlab is not initialized')
+                project = self.gitlab.get_project(url)
+                commits = project.commits.list(ref_name=ref)
+                commit_sha = commits[0].id
+        except GithubException as e:
+            raise ValueError(f"Unable to fetch commit {ref} from {url}") from e
 
         if hash_length:
             return commit_sha[:hash_length]
