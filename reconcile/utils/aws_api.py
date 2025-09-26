@@ -89,6 +89,14 @@ class MissingARNError(Exception):
     pass
 
 
+# class MalformedAWSPolicyError(Exception):
+#     def __init__(self, policy_type: str, policy_content: str, error_details: str) -> None:
+#         self.policy_type = policy_type
+#         self.policy_content = policy_content
+#         self.error_details = error_details
+#         super().__init__(f"Malformed AWS {policy_type}: {error_details}")
+
+
 KeyStatus = Literal["Active", "Inactive"]
 
 GOVCLOUD_PARTITION = "aws-us-gov"
@@ -1649,6 +1657,207 @@ class AWSApi:
                 objects, key=operator.itemgetter("LastModified"), reverse=True
             )
         ]
+
+    # @staticmethod
+    # def validate_aws_policy(policy_type: str, policy_content: str) -> None:
+    #     """
+    #     Validate AWS policy JSON format and basic structure.
+        
+    #     :param policy_type: Type of policy (user_policy, inline_policy, bucket_policy, role_policy)
+    #     :param policy_content: The policy content as a string
+    #     :raises MalformedAWSPolicyError: If the policy is malformed
+    #     """
+    #     import json
+        
+    #     if not policy_content or not policy_content.strip():
+    #         raise MalformedAWSPolicyError(
+    #             policy_type, 
+    #             policy_content, 
+    #             "Policy content is empty or contains only whitespace"
+    #         )
+        
+    #     try:
+    #         # Parse JSON to ensure it's valid
+    #         policy_dict = json.loads(policy_content)
+    #     except json.JSONDecodeError as e:
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             f"Invalid JSON format: {str(e)}"
+    #         ) from e
+        
+    #     # Validate basic AWS policy structure
+    #     if not isinstance(policy_dict, dict):
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             "Policy must be a JSON object"
+    #         )
+        
+    #     # Check for required Version field
+    #     if "Version" not in policy_dict:
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             "Policy must contain a 'Version' field"
+    #         )
+        # good to keep
+    #     # Validate Version field value
+    #     version = policy_dict["Version"]
+    #     if version not in ["2012-10-17", "2008-10-17"]:
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             f"Invalid Version '{version}'. Must be '2012-10-17' or '2008-10-17'"
+    #         )
+        
+    #     # Check for required Statement field
+    #     if "Statement" not in policy_dict:
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             "Policy must contain a 'Statement' field"
+    #         )
+        
+    #     statements = policy_dict["Statement"]
+        
+    #     # Statement can be a single object or array of objects
+    #     if not isinstance(statements, (list, dict)):
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             "Statement must be an object or array of objects"
+    #         )
+        
+    #     # Normalize to list for validation
+    #     if isinstance(statements, dict):
+    #         statements = [statements]
+        
+    #     if not statements:
+    #         raise MalformedAWSPolicyError(
+    #             policy_type,
+    #             policy_content,
+    #             "Statement array cannot be empty"
+    #         )
+        
+    #     # Validate each statement
+    #     for i, statement in enumerate(statements):
+    #         if not isinstance(statement, dict):
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] must be an object"
+    #             )
+            
+    #         # Check for required Effect field
+    #         if "Effect" not in statement:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] must contain an 'Effect' field"
+    #             )
+            
+    #         effect = statement["Effect"]
+    #         if effect not in ["Allow", "Deny"]:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] Effect must be 'Allow' or 'Deny', got '{effect}'"
+    #             )
+            
+    #         # Check for required Action or NotAction field
+    #         has_action = "Action" in statement
+    #         has_not_action = "NotAction" in statement
+            
+    #         if not has_action and not has_not_action:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] must contain either 'Action' or 'NotAction' field"
+    #             )
+            
+    #         if has_action and has_not_action:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] cannot contain both 'Action' and 'NotAction' fields"
+    #             )
+            
+    #         # Validate Action/NotAction format
+    #         action_field = "Action" if has_action else "NotAction"
+    #         actions = statement[action_field]
+            
+    #         if isinstance(actions, str):
+    #             actions = [actions]
+    #         elif not isinstance(actions, list):
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] {action_field} must be a string or array of strings"
+    #             )
+            
+    #         if not actions:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] {action_field} array cannot be empty"
+    #             )
+            
+    #         for j, action in enumerate(actions):
+    #             if not isinstance(action, str) or not action.strip():
+    #                 raise MalformedAWSPolicyError(
+    #                     policy_type,
+    #                     policy_content,
+    #                     f"Statement[{i}] {action_field}[{j}] must be a non-empty string"
+    #                 )
+            
+    #         # For bucket policies, Resource is typically required
+    #         # For other policies, Resource or NotResource should be present for most cases
+    #         has_resource = "Resource" in statement
+    #         has_not_resource = "NotResource" in statement
+            
+    #         if policy_type == "bucket_policy" and not has_resource and not has_not_resource:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] in bucket policy should contain 'Resource' or 'NotResource' field"
+    #             )
+            
+    #         if has_resource and has_not_resource:
+    #             raise MalformedAWSPolicyError(
+    #                 policy_type,
+    #                 policy_content,
+    #                 f"Statement[{i}] cannot contain both 'Resource' and 'NotResource' fields"
+    #             )
+            
+    #         # Validate Resource/NotResource format if present
+    #         for resource_field in ["Resource", "NotResource"]:
+    #             if resource_field in statement:
+    #                 resources = statement[resource_field]
+                    
+    #                 if isinstance(resources, str):
+    #                     resources = [resources]
+    #                 elif not isinstance(resources, list):
+    #                     raise MalformedAWSPolicyError(
+    #                         policy_type,
+    #                         policy_content,
+    #                         f"Statement[{i}] {resource_field} must be a string or array of strings"
+    #                     )
+                    
+    #                 if not resources:
+    #                     raise MalformedAWSPolicyError(
+    #                         policy_type,
+    #                         policy_content,
+    #                         f"Statement[{i}] {resource_field} array cannot be empty"
+    #                     )
+                    
+    #                 for j, resource in enumerate(resources):
+    #                     if not isinstance(resource, str) or not resource.strip():
+    #                         raise MalformedAWSPolicyError(
+    #                             policy_type,
+    #                             policy_content,
+    #                             f"Statement[{i}] {resource_field}[{j}] must be a non-empty string"
+    #                         )
 
 
 def aws_config_file_path() -> str | None:

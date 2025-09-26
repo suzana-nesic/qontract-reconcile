@@ -156,6 +156,7 @@ from reconcile.utils import gql
 from reconcile.utils.aws_api import (
     AmiTag,
     AWSApi,
+    # MalformedAWSPolicyError,
 )
 from reconcile.utils.cloud_resource_best_practice.aws_rds import (
     verify_rds_best_practices,
@@ -2544,6 +2545,13 @@ class TerrascriptClient:
 
         bucket_policy = common_values.get("bucket_policy")
         if bucket_policy:
+            # # Validate bucket_policy before processing
+            # try:
+            #     AWSApi.validate_aws_policy("bucket_policy", bucket_policy)
+            # except MalformedAWSPolicyError as e:
+            #     logging.error(f"Malformed bucket_policy in resource {identifier}: {e}")
+            #     raise
+            
             values = {
                 "bucket": identifier,
                 "policy": bucket_policy,
@@ -2743,6 +2751,13 @@ class TerrascriptClient:
 
         user_policy = common_values.get("user_policy")
         if user_policy:
+            # # Validate user_policy before processing
+            # try:
+            #     AWSApi.validate_aws_policy("user_policy", user_policy)
+            # except MalformedAWSPolicyError as e:
+            #     logging.error(f"Malformed user_policy in resource {identifier}: {e}")
+            #     raise
+            
             variables = common_values.get("variables")
             # variables are replaced in the user_policy
             # and also added to the output resource
@@ -2884,6 +2899,13 @@ class TerrascriptClient:
 
         inline_policy = common_values.get("inline_policy")
         if inline_policy:
+            # # Validate inline_policy before processing
+            # try:
+            #     AWSApi.validate_aws_policy("inline_policy", inline_policy)
+            # except MalformedAWSPolicyError as e:
+            #     logging.error(f"Malformed inline_policy in resource {identifier}: {e}")
+            #     raise
+            
             values["inline_policy"] = {"name": identifier, "policy": inline_policy}
 
         if lifecycle := self.get_resource_lifecycle(common_values):
@@ -2896,6 +2918,13 @@ class TerrascriptClient:
         tf_resources.append(role_tf_resource)
 
         if role_policy := common_values.get("role_policy"):
+            # # Validate role_policy before processing
+            # try:
+            #     AWSApi.validate_aws_policy("role_policy", role_policy)
+            # except MalformedAWSPolicyError as e:
+            #     logging.error(f"Malformed role_policy in resource {identifier}: {e}")
+            #     raise
+            
             tf_aws_iam_policy = aws_iam_policy(
                 identifier,
                 name=identifier,
@@ -3131,6 +3160,14 @@ class TerrascriptClient:
         common_values = self.init_values(spec)
         output_prefix = spec.output_prefix
         policy = common_values.get("inline_policy")
+        if policy:
+            # Validate inline_policy before processing
+            try:
+                AWSApi.validate_aws_policy("inline_policy", policy)
+            except MalformedAWSPolicyError as e:
+                logging.error(f"Malformed inline_policy in SNS resource {identifier}: {e}")
+                raise
+        
         region = common_values.get("region") or self.default_regions.get(account)
         assert region  # make mypy happy
         values: dict[str, Any] = {}
